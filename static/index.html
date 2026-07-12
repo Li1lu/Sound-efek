@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SFX Generator</title>
+<link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="bg-glow bg-glow--1" aria-hidden="true"></div>
+  <div class="bg-glow bg-glow--2" aria-hidden="true"></div>
+  <div class="bg-glow bg-glow--3" aria-hidden="true"></div>
+
+  <div id="toast-root" class="toast-root" aria-live="polite"></div>
+
+  <header class="app-header">
+    <div class="app-header__inner">
+      <h1 class="app-title">
+        <span class="app-title__mark">&#127925;</span> SFX Generator
+      </h1>
+      <div id="model-status" class="status-badge status-badge--loading" title="">
+        <span class="status-badge__dot"></span>
+        <span class="status-badge__text">状態確認中…</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <!-- 生成パネル -->
+    <section class="panel" aria-labelledby="gen-panel-title">
+      <h2 id="gen-panel-title" class="panel__title">音を生成する</h2>
+
+      <div class="preset-block">
+        <div id="category-tabs" class="tabs" role="tablist"></div>
+        <div id="preset-grid" class="preset-grid"></div>
+      </div>
+
+      <div class="custom-block">
+        <h3 class="custom-block__title">自由入力で生成</h3>
+        <div class="custom-form">
+          <textarea
+            id="custom-prompt"
+            class="custom-form__textarea"
+            rows="2"
+            placeholder="例: 錆びた金属のドアがきしみながら開く音(日本語OK)"
+          ></textarea>
+
+          <div class="custom-form__row">
+            <label class="field-label" for="duration-slider">
+              長さ: <span id="duration-value">5.0</span>秒
+            </label>
+            <input
+              type="range"
+              id="duration-slider"
+              min="0.5"
+              max="30"
+              step="0.5"
+              value="5"
+              class="slider"
+            />
+          </div>
+
+          <div class="custom-form__row">
+            <label class="field-label" for="custom-name">名前(任意)</label>
+            <input
+              type="text"
+              id="custom-name"
+              class="text-input"
+              placeholder="未入力なら自動命名"
+            />
+          </div>
+
+          <details class="advanced-settings">
+            <summary class="advanced-settings__toggle">詳細設定(シード・品質など)</summary>
+            <div class="advanced-settings__body">
+              <div class="custom-form__row">
+                <label class="field-label" for="adv-seed">シード</label>
+                <input
+                  type="number"
+                  id="adv-seed"
+                  class="text-input"
+                  placeholder="未入力ならランダム"
+                  min="0"
+                />
+              </div>
+
+              <div class="custom-form__row">
+                <label class="field-label" for="adv-steps">
+                  ステップ数: <span id="adv-steps-value">8</span>
+                </label>
+                <input
+                  type="range"
+                  id="adv-steps"
+                  min="1"
+                  max="100"
+                  step="1"
+                  value="8"
+                  class="slider"
+                />
+              </div>
+              <p class="advanced-settings__hint">多いほど高品質になりますが生成が遅くなります。</p>
+
+              <div class="custom-form__row">
+                <label class="field-label" for="adv-cfg">
+                  ガイダンス強度: <span id="adv-cfg-value">1.0</span>
+                </label>
+                <input
+                  type="range"
+                  id="adv-cfg"
+                  min="0.1"
+                  max="10"
+                  step="0.1"
+                  value="1.0"
+                  class="slider"
+                />
+              </div>
+              <p class="advanced-settings__hint">高いほどプロンプトに忠実になりますが、不自然になる場合があります。</p>
+
+              <div class="custom-form__row">
+                <label class="field-label" for="adv-negative">除外したい要素</label>
+                <input
+                  type="text"
+                  id="adv-negative"
+                  class="text-input"
+                  placeholder="例: 音楽、ノイズ(日本語OK・任意)"
+                />
+              </div>
+            </div>
+          </details>
+
+          <button id="generate-btn" class="btn btn--primary btn--wide" type="button">
+            <span class="btn__label">生成</span>
+            <span class="spinner spinner--hidden" aria-hidden="true"></span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 確認エリア -->
+    <section class="panel panel--preview" aria-labelledby="preview-panel-title">
+      <h2 id="preview-panel-title" class="panel__title">確認・編集</h2>
+
+      <div id="preview-empty" class="preview-empty">
+        音を生成するか、一覧から選択してください。
+      </div>
+
+      <div id="preview-content" class="preview-content preview-content--hidden">
+        <div class="preview-name-row">
+          <span id="preview-name" class="preview-name" title="クリックして改名"></span>
+          <input id="preview-name-input" class="preview-name-input preview-name-input--hidden" type="text" />
+        </div>
+        <div id="preview-params" class="preview-params"></div>
+
+        <div id="waveform" class="waveform"></div>
+
+        <div class="preview-controls">
+          <button id="play-btn" class="btn btn--icon" type="button" title="再生/一時停止">▶</button>
+          <span id="selection-info" class="selection-info"></span>
+          <div class="preview-controls__spacer"></div>
+          <button id="cut-btn" class="btn btn--danger" type="button" disabled>選択範囲をカット</button>
+          <button id="gain-down-btn" class="btn btn--secondary" type="button" disabled title="音量を3dB下げる">−3dB</button>
+          <button id="gain-up-btn" class="btn btn--secondary" type="button" disabled title="音量を3dB上げる">+3dB</button>
+          <button id="normalize-btn" class="btn btn--secondary" type="button" disabled title="クリップしない範囲で音量を最大化">音量最大化</button>
+          <button id="undo-btn" class="btn btn--secondary" type="button" disabled>元に戻す</button>
+          <a id="download-btn" class="btn btn--secondary" href="#" download>ダウンロード</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- 生成音一覧 -->
+    <section class="panel" aria-labelledby="list-panel-title">
+      <h2 id="list-panel-title" class="panel__title">生成音一覧</h2>
+      <div class="sound-list-wrap">
+        <table class="sound-list">
+          <thead>
+            <tr>
+              <th class="col-name">名前</th>
+              <th class="col-duration">長さ</th>
+              <th class="col-created">作成日時</th>
+              <th class="col-actions">操作</th>
+            </tr>
+          </thead>
+          <tbody id="sound-list-body">
+            <tr class="sound-list__empty-row">
+              <td colspan="4">まだ音がありません</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <a href="https://stability.ai" target="_blank" rel="noopener noreferrer">Powered by Stability AI</a>
+  </footer>
+
+  <script type="module" src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+venv/
+__pycache__/
+*.pyc
+generated/*.wav
+generated/*.wav.bak
+generated/sounds.db
+.DS_Store
