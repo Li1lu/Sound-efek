@@ -46,9 +46,11 @@ EXPOSE 8600
 
 # Default environment variables
 ENV SFX_HOST=0.0.0.0
-ENV SFX_PORT=8600
+ENV SFX_PORT=${PORT:-8600}
 ENV SFX_DEVICE=cpu
 ENV SFX_DATA_DIR=/app/generated
 ENV SFX_LLM_URL=""
 
-CMD ["python", "-m", "app.main", "--host", "0.0.0.0", "--port", "8600"]
+EXPOSE ${PORT:-8600}
+
+CMD ["sh", "-c", "python -m app.main --host 0.0.0.0 --port ${PORT:-8600}"]
