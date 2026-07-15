@@ -1,9 +1,12 @@
 """Japanese -> English translation for prompts, via a local OpenAI-compatible LLM."""
+import logging
 import re
 
 import httpx
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 JAPANESE_RE = re.compile(r"[ぁ-ヿ㐀-䶿一-鿿]")
 
@@ -20,6 +23,9 @@ def needs_translation(text: str) -> bool:
 
 async def translate_to_english(text: str) -> str:
     """Translate Japanese prompt to English. Raises httpx errors on failure."""
+    if not settings.llm_url:
+        logger.warning("No LLM URL configured, returning original text")
+        return text
     payload = {
         "model": settings.llm_model,
         "messages": [
@@ -36,6 +42,8 @@ async def translate_to_english(text: str) -> str:
 
 
 async def check_translator_ok() -> bool:
+    if not settings.llm_url:
+        return False
     try:
         async with httpx.AsyncClient(timeout=3.0) as client:
             resp = await client.get(f"{settings.llm_url}/models")

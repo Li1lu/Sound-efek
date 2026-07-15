@@ -1,0 +1,10 @@
+venv/
+.git/
+generated/
+__pycache__/
+*.pyc
+docs/
+README.md
+.dockerignore
+Dockerfile
+railway.json
