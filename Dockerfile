@@ -2,10 +2,11 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install system dependencies for audio processing
+# Install system dependencies for audio processing + git
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     libsndfile1 \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 # Install PyTorch CPU first (largest dependency)
