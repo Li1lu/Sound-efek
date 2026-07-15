@@ -33,14 +33,6 @@ RUN pip install --no-cache-dir \
     einops \
     transformers
 
-# Pre-download model during build (requires HF_TOKEN build arg)
-ARG HF_TOKEN
-RUN python -c "\
-from huggingface_hub import hf_hub_download; \
-hf_hub_download('stabilityai/stable-audio-3-small-sfx', 'model_config.json', token='${HF_TOKEN}'); \
-hf_hub_download('stabilityai/stable-audio-3-small-sfx', 'model.safetensors', token='${HF_TOKEN}'); \
-print('Model cached')"
-
 # Copy application
 COPY app/ app/
 COPY static/ static/
