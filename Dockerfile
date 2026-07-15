@@ -6,7 +6,6 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     libsndfile1 \
-    git \
     && rm -rf /var/lib/apt/lists/*
 
 # Install PyTorch CPU first (largest dependency)
@@ -34,6 +33,14 @@ RUN pip install --no-cache-dir \
     einops \
     transformers
 
+# Pre-download model during build (requires HF_TOKEN build arg)
+ARG HF_TOKEN
+RUN python -c "\
+from huggingface_hub import hf_hub_download; \
+hf_hub_download('stabilityai/stable-audio-3-small-sfx', 'model_config.json', token='${HF_TOKEN}'); \
+hf_hub_download('stabilityai/stable-audio-3-small-sfx', 'model.safetensors', token='${HF_TOKEN}'); \
+print('Model cached')"
+
 # Copy application
 COPY app/ app/
 COPY static/ static/
@@ -41,16 +48,12 @@ COPY static/ static/
 # Create data directory
 RUN mkdir -p /app/generated
 
-# Expose port
-EXPOSE 8600
-
 # Default environment variables
 ENV SFX_HOST=0.0.0.0
-ENV SFX_PORT=${PORT:-8600}
 ENV SFX_DEVICE=cpu
 ENV SFX_DATA_DIR=/app/generated
 ENV SFX_LLM_URL=""
 
-EXPOSE ${PORT:-8600}
+EXPOSE 8600
 
 CMD ["sh", "-c", "python -m app.main --host 0.0.0.0 --port ${PORT:-8600}"]
